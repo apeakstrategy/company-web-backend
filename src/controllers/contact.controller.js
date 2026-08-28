@@ -1,18 +1,10 @@
-const transporter = require("../config/mailer");
-
-exports.sendMessage = async (req, res) => {
-  const { name, email, subject, message } = req.body;
-
-  await transporter.sendMail({
-    from: email,
-    to: process.env.MAIL_USER,
-    subject: `Contact: ${subject}`,
-    html: `
-      <h3>${name}</h3>
-      <p>${message}</p>
-      <small>${email}</small>
-    `,
-  });
-
-  res.json({ message: "Message sent" });
-};
+const service = require("../services/contact-inquiry.service");
+const AppError = require("../utils/AppError");
+exports.submit = async (req,res) => res.status(201).json({success:true,data:await service.submit(req.validated.body,req),message:"Thank you. Your message has been received."});
+exports.list = async (req,res) => res.json({success:true,...await service.list(req.validated.query)});
+exports.stats = async (_req,res) => res.json({success:true,data:await service.stats()});
+exports.get = async (req,res) => res.json({success:true,data:await service.get(req.validated.params.id)});
+exports.update = async (req,res) => res.json({success:true,data:await service.update(req.validated.params.id,req.validated.body)});
+exports.reply = async (req,res) => res.status(201).json({success:true,data:await service.reply(req.validated.params.id,req.admin.id,req.validated.body)});
+exports.resendNotification = async (req,res) => res.json({success:true,data:await service.resendNotification(req.validated.params.id)});
+exports.remove = async (req,res) => { if(req.admin.role!=="SUPER_ADMIN") throw new AppError(403,"Only a super admin can permanently delete inquiries"); await service.remove(req.validated.params.id); res.status(204).send(); };

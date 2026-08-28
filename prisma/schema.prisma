@@ -1,0 +1,309 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma-client"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum WorkStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  EDITOR
+}
+
+enum BlogStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Blog {
+  id                   Int                 @id @default(autoincrement())
+  slug                 String              @unique @db.VarChar(191)
+  title                String              @db.VarChar(191)
+  excerpt              String              @db.VarChar(500)
+  category             String              @db.VarChar(100)
+  coverImageUrl        String              @db.VarChar(2048)
+  coverImagePublicId   String?             @db.VarChar(255)
+  coverImageAltText    String?             @db.VarChar(255)
+  authorName           String              @default("A Peak Strategy Team") @db.VarChar(120)
+  authorRole           String?             @db.VarChar(120)
+  authorImageUrl       String?             @db.VarChar(2048)
+  authorImagePublicId  String?             @db.VarChar(255)
+  readTimeMinutes      Int                 @default(5)
+  views                Int                 @default(0)
+  isFeatured           Boolean             @default(false)
+  status               BlogStatus          @default(DRAFT)
+  sortOrder            Int                 @default(0)
+  seoTitle             String?             @db.VarChar(70)
+  seoDescription       String?             @db.VarChar(170)
+  canonicalUrl         String?             @db.VarChar(2048)
+  publishedAt          DateTime?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  sections             BlogSection[]
+  images               BlogImage[]
+  tags                  BlogTagAssignment[]
+
+  @@index([status, sortOrder])
+  @@index([category, status])
+  @@index([isFeatured, status])
+  @@index([publishedAt])
+}
+
+model BlogSection {
+  id         Int             @id @default(autoincrement())
+  blogId     Int
+  heading    String          @db.VarChar(191)
+  sortOrder  Int             @default(0)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  blog       Blog            @relation(fields: [blogId], references: [id], onDelete: Cascade)
+  paragraphs BlogParagraph[]
+  images     BlogImage[]
+
+  @@index([blogId, sortOrder])
+}
+
+model BlogParagraph {
+  id        Int         @id @default(autoincrement())
+  sectionId Int
+  content   String      @db.Text
+  sortOrder Int         @default(0)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  section   BlogSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@index([sectionId, sortOrder])
+}
+
+model BlogImage {
+  id        Int          @id @default(autoincrement())
+  blogId    Int
+  sectionId Int?
+  url       String       @db.VarChar(2048)
+  publicId  String?      @db.VarChar(255)
+  altText   String       @db.VarChar(255)
+  caption   String?      @db.VarChar(500)
+  width     Int?
+  height    Int?
+  sortOrder Int          @default(0)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  blog      Blog         @relation(fields: [blogId], references: [id], onDelete: Cascade)
+  section   BlogSection? @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@index([blogId, sortOrder])
+  @@index([sectionId, sortOrder])
+}
+
+model BlogTag {
+  id        Int                 @id @default(autoincrement())
+  name      String              @unique @db.VarChar(100)
+  slug      String              @unique @db.VarChar(100)
+  blogs     BlogTagAssignment[]
+  createdAt DateTime            @default(now())
+}
+
+model BlogTagAssignment {
+  blogId    Int
+  tagId     Int
+  sortOrder Int     @default(0)
+  blog      Blog    @relation(fields: [blogId], references: [id], onDelete: Cascade)
+  tag       BlogTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([blogId, tagId])
+  @@index([blogId, sortOrder])
+  @@index([tagId])
+}
+
+model Admin {
+  id           Int       @id @default(autoincrement())
+  name         String    @db.VarChar(120)
+  email        String    @unique @db.VarChar(191)
+  passwordHash String    @db.VarChar(255)
+  role         AdminRole @default(EDITOR)
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  contactReplies ContactReply[]
+
+  @@index([isActive])
+}
+
+enum ContactStatus {
+  NEW
+  READ
+  IN_PROGRESS
+  REPLIED
+  ARCHIVED
+  SPAM
+}
+
+enum ContactPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum DeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model ContactInquiry {
+  id                 Int             @id @default(autoincrement())
+  reference          String          @unique @db.VarChar(32)
+  name               String          @db.VarChar(120)
+  email              String          @db.VarChar(191)
+  subject            String          @db.VarChar(191)
+  message            String          @db.Text
+  status             ContactStatus   @default(NEW)
+  priority           ContactPriority @default(NORMAL)
+  source             String          @default("website") @db.VarChar(50)
+  ipHash             String?         @db.VarChar(64)
+  userAgent          String?         @db.VarChar(500)
+  notificationStatus DeliveryStatus  @default(PENDING)
+  notificationError  String?         @db.VarChar(1000)
+  lastRepliedAt      DateTime?
+  archivedAt         DateTime?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  replies            ContactReply[]
+
+  @@index([status, createdAt])
+  @@index([priority, createdAt])
+  @@index([email, createdAt])
+  @@index([notificationStatus])
+}
+
+model ContactReply {
+  id                Int            @id @default(autoincrement())
+  inquiryId         Int
+  adminId           Int
+  subject           String         @db.VarChar(191)
+  message           String         @db.Text
+  deliveryStatus    DeliveryStatus @default(PENDING)
+  providerMessageId String?        @db.VarChar(255)
+  deliveryError     String?        @db.VarChar(1000)
+  sentAt            DateTime?
+  createdAt         DateTime       @default(now())
+  inquiry           ContactInquiry @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  admin             Admin          @relation(fields: [adminId], references: [id], onDelete: Restrict)
+
+  @@index([inquiryId, createdAt])
+  @@index([adminId])
+  @@index([deliveryStatus])
+}
+
+model Work {
+  id                   Int              @id @default(autoincrement())
+  slug                 String           @unique @db.VarChar(191)
+  title                String           @db.VarChar(191)
+  category             String           @db.VarChar(100)
+  shortDescription     String           @db.VarChar(500)
+  overview             String?          @db.Text
+  coverImageUrl        String           @db.VarChar(2048)
+  coverImagePublicId   String?          @db.VarChar(255)
+  coverImageAltText    String?          @db.VarChar(255)
+  client               String?          @db.VarChar(191)
+  timeline             String?          @db.VarChar(100)
+  teamSize             String?          @db.VarChar(100)
+  results              String?          @db.VarChar(500)
+  projectUrl           String?          @db.VarChar(2048)
+  completedAt          DateTime?
+  isFeatured           Boolean          @default(false)
+  status               WorkStatus       @default(DRAFT)
+  sortOrder            Int              @default(0)
+  publishedAt          DateTime?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  sections             WorkSection[]
+  images               WorkImage[]
+  technologies         WorkTechnology[]
+  services             WorkService[]
+
+  @@index([status, sortOrder])
+  @@index([category, status])
+  @@index([isFeatured, status])
+  @@index([createdAt])
+}
+
+model WorkSection {
+  id         Int             @id @default(autoincrement())
+  workId     Int
+  heading    String          @db.VarChar(191)
+  sortOrder  Int             @default(0)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  work       Work            @relation(fields: [workId], references: [id], onDelete: Cascade)
+  paragraphs WorkParagraph[]
+  images     WorkImage[]
+
+  @@index([workId, sortOrder])
+}
+
+model WorkParagraph {
+  id        Int         @id @default(autoincrement())
+  sectionId Int
+  content   String      @db.Text
+  sortOrder Int         @default(0)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  section   WorkSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@index([sectionId, sortOrder])
+}
+
+model WorkImage {
+  id        Int          @id @default(autoincrement())
+  workId    Int
+  sectionId Int?
+  url       String       @db.VarChar(2048)
+  publicId  String?      @db.VarChar(255)
+  altText   String       @db.VarChar(255)
+  caption   String?      @db.VarChar(500)
+  width     Int?
+  height    Int?
+  sortOrder Int          @default(0)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  work      Work         @relation(fields: [workId], references: [id], onDelete: Cascade)
+  section   WorkSection? @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@index([workId, sortOrder])
+  @@index([sectionId, sortOrder])
+}
+
+model WorkTechnology {
+  id        Int      @id @default(autoincrement())
+  workId    Int
+  name      String   @db.VarChar(100)
+  sortOrder Int      @default(0)
+  work      Work     @relation(fields: [workId], references: [id], onDelete: Cascade)
+
+  @@unique([workId, name])
+  @@index([workId, sortOrder])
+}
+
+model WorkService {
+  id        Int      @id @default(autoincrement())
+  workId    Int
+  name      String   @db.VarChar(100)
+  sortOrder Int      @default(0)
+  work      Work     @relation(fields: [workId], references: [id], onDelete: Cascade)
+
+  @@unique([workId, name])
+  @@index([workId, sortOrder])
+}

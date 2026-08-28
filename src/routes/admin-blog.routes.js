@@ -1,0 +1,15 @@
+const router = require("express").Router();
+const controller = require("../controllers/admin-blog.controller");
+const asyncHandler = require("../utils/asyncHandler");
+const validate = require("../middlewares/validate");
+const { requireAdmin, requireCsrf } = require("../middlewares/auth.middleware");
+const { createBlogSchema, updateBlogSchema, idParams, adminList } = require("../validators/blog.validator");
+router.use(asyncHandler(requireAdmin));
+router.get("/stats", asyncHandler(controller.stats));
+router.get("/", validate({query:adminList}), asyncHandler(controller.list));
+router.get("/:id", validate({params:idParams}), asyncHandler(controller.get));
+router.post("/", requireCsrf, validate({body:createBlogSchema}), asyncHandler(controller.create));
+router.put("/:id", requireCsrf, validate({params:idParams,body:createBlogSchema}), asyncHandler(controller.update));
+router.patch("/:id", requireCsrf, validate({params:idParams,body:updateBlogSchema}), asyncHandler(controller.update));
+router.delete("/:id", requireCsrf, validate({params:idParams}), asyncHandler(controller.remove));
+module.exports = router;

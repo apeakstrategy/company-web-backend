@@ -1,27 +1,46 @@
 {
   "name": "peakstrategybackend",
   "version": "1.0.0",
-  "description": "",
+  "description": "API for the A Peak Strategy company website",
   "main": "src/server.js",
   "scripts": {
-    "dev": "nodemon server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate:dev": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:studio": "prisma studio",
+    "db:seed": "prisma db seed",
+    "db:seed-admin": "node prisma/seed-admin.js",
+    "db:seed-blogs": "node prisma/seed-blogs.js",
+    "check": "node --check src/server.js && node --check src/app.js && node --check src/services/work.service.js && node --check src/services/mysql-blog.service.js && node --check src/services/auth.service.js && node --check src/services/contact-inquiry.service.js && node --check src/services/contact-mail.service.js && node --check src/controllers/upload.controller.js && node --check src/validators/work.validator.js && node --check src/validators/blog.validator.js && node --check src/validators/contact.validator.js",
+    "test": "node --test"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
   "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "bcryptjs": "^3.0.3",
     "cloudinary": "^2.9.0",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.6.2",
     "firebase-admin": "^13.6.0",
+    "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.0.2",
     "nodemailer": "^7.0.12",
-    "slugify": "^1.6.6"
+    "slugify": "^1.6.6",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
-    "nodemon": "^3.1.11"
+    "nodemon": "^3.1.11",
+    "prisma": "^6.19.3"
   }
 }

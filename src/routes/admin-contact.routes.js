@@ -1,0 +1,15 @@
+const router=require("express").Router();
+const controller=require("../controllers/contact.controller");
+const asyncHandler=require("../utils/asyncHandler");
+const validate=require("../middlewares/validate");
+const {requireAdmin,requireCsrf}=require("../middlewares/auth.middleware");
+const {adminList,idParams,updateInquiry,reply}=require("../validators/contact.validator");
+router.use(asyncHandler(requireAdmin));
+router.get("/stats",asyncHandler(controller.stats));
+router.get("/",validate({query:adminList}),asyncHandler(controller.list));
+router.get("/:id",validate({params:idParams}),asyncHandler(controller.get));
+router.patch("/:id",requireCsrf,validate({params:idParams,body:updateInquiry}),asyncHandler(controller.update));
+router.post("/:id/replies",requireCsrf,validate({params:idParams,body:reply}),asyncHandler(controller.reply));
+router.post("/:id/resend-notification",requireCsrf,validate({params:idParams}),asyncHandler(controller.resendNotification));
+router.delete("/:id",requireCsrf,validate({params:idParams}),asyncHandler(controller.remove));
+module.exports=router;
