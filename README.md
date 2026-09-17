@@ -16,6 +16,16 @@ npm run dev
 
 Example: `DATABASE_URL="mysql://apeak_user:url_encoded_password@127.0.0.1:3306/apeak_strategy"`. URL-encode special characters in the password.
 
+## Gemini Chatbot Setup
+
+The website chat widget calls `POST /api/chat` on this backend. Create a Gemini API key in [Google AI Studio](https://aistudio.google.com/apikey), add `GEMINI_API_KEY=...` to the backend `.env` (see `.env.example`), and restart the backend. The key must remain server-side. The backend uses the official `@google/genai` SDK with `gemini-3.5-flash-lite`; there is no browser-side Gemini connection.
+
+For local testing, run this API on port 5000 and the frontend on port 3000. The frontend uses `NEXT_PUBLIC_API_URL` (for example `http://localhost:5000/api`); set it to the public HTTPS API URL in production. Add the frontend's exact origin to `CORS_ORIGINS`. If a reverse proxy is used, set `TRUST_PROXY=true` only when that proxy is trusted so IP rate limiting works as intended.
+
+The route accepts JSON `{ "message": "What services do you offer?", "history": [] }` and returns `{ "success": true, "reply": "...", "timestamp": "..." }`. Input is limited to 1,200 characters, 10 recent history messages, and a 16 KB request body. The route permits 8 requests per IP per minute and uses a 12-second Gemini timeout. Chats are not stored. Update `src/knowledge/company-knowledge.md` when company facts change, then restart the backend. The in-memory limiter is per process; use a shared rate-limit store if deploying multiple API instances.
+
+The endpoint returns a safe contact-oriented error if the key is missing or Gemini is unavailable. Test locally with the widget or send a JSON POST to `/api/chat`; `npm run check` and `npm test` cover validation and API behavior without a live Gemini key.
+
 ## Works API
 
 | Method | Route | Purpose |

@@ -13,7 +13,7 @@
     "db:seed": "prisma db seed",
     "db:seed-admin": "node prisma/seed-admin.js",
     "db:seed-blogs": "node prisma/seed-blogs.js",
-    "check": "node --check src/server.js && node --check src/app.js && node --check src/services/work.service.js && node --check src/services/mysql-blog.service.js && node --check src/services/auth.service.js && node --check src/services/contact-inquiry.service.js && node --check src/services/contact-mail.service.js && node --check src/controllers/upload.controller.js && node --check src/validators/work.validator.js && node --check src/validators/blog.validator.js && node --check src/validators/contact.validator.js",
+    "check": "node --check src/server.js && node --check src/app.js && node --check src/services/work.service.js && node --check src/services/mysql-blog.service.js && node --check src/services/auth.service.js && node --check src/services/contact-inquiry.service.js && node --check src/services/contact-mail.service.js && node --check src/services/chat.service.js && node --check src/routes/chat.routes.js && node --check src/controllers/chat.controller.js && node --check src/validators/chat.validator.js && node --check src/controllers/upload.controller.js && node --check src/validators/work.validator.js && node --check src/validators/blog.validator.js && node --check src/validators/contact.validator.js",
     "test": "node --test"
   },
   "keywords": [],
@@ -23,6 +23,7 @@
     "seed": "node prisma/seed.js"
   },
   "dependencies": {
+    "@google/genai": "^2.23.0",
     "@prisma/client": "^6.19.3",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.9.0",
