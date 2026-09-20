@@ -43,16 +43,89 @@ test("contact validation rejects empty, oversized, and header-injection content"
 
 test("Turnstile is optional without a secret and required when configured", async () => {
   const previousSecret = process.env.TURNSTILE_SECRET_KEY;
+  const previousHostnames = process.env.TURNSTILE_HOSTNAMES;
+  const previousTestMode = process.env.TURNSTILE_TEST_MODE;
   const previousEnvironment = process.env.NODE_ENV;
   try {
     process.env.NODE_ENV = "production";
+    process.env.TURNSTILE_TEST_MODE = "true";
     delete process.env.TURNSTILE_SECRET_KEY;
     await assert.doesNotReject(contactService.verifyTurnstile("", "127.0.0.1"));
     process.env.TURNSTILE_SECRET_KEY = "configured-secret";
     await assert.rejects(contactService.verifyTurnstile("", "127.0.0.1"), error => error.statusCode === 400);
+    await assert.rejects(contactService.verifyTurnstile("valid-looking-token", "127.0.0.1"), error => error.statusCode === 503);
   } finally {
     if (previousSecret === undefined) delete process.env.TURNSTILE_SECRET_KEY;
     else process.env.TURNSTILE_SECRET_KEY = previousSecret;
+    if (previousHostnames === undefined) delete process.env.TURNSTILE_HOSTNAMES;
+    else process.env.TURNSTILE_HOSTNAMES = previousHostnames;
+    if (previousTestMode === undefined) delete process.env.TURNSTILE_TEST_MODE;
+    else process.env.TURNSTILE_TEST_MODE = previousTestMode;
+    if (previousEnvironment === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = previousEnvironment;
+  }
+});
+
+test("Turnstile requires the contact action and an allowed frontend hostname", async () => {
+  const previousSecret = process.env.TURNSTILE_SECRET_KEY;
+  const previousHostnames = process.env.TURNSTILE_HOSTNAMES;
+  const previousTestMode = process.env.TURNSTILE_TEST_MODE;
+  const previousEnvironment = process.env.NODE_ENV;
+  const previousFetch = global.fetch;
+  process.env.NODE_ENV = "production";
+  delete process.env.TURNSTILE_TEST_MODE;
+  process.env.TURNSTILE_SECRET_KEY = "configured-secret";
+  process.env.TURNSTILE_HOSTNAMES = "localhost, www.apeakstrategy.com";
+  try {
+    let payload;
+    global.fetch = async (_url, options) => {
+      payload = options.body;
+      return { ok: true, json: async () => ({ success: true, action: "contact", hostname: "localhost" }) };
+    };
+    await assert.doesNotReject(contactService.verifyTurnstile("fresh-token", "127.0.0.1"));
+    assert.equal(payload.get("secret"), "configured-secret");
+    assert.equal(payload.get("response"), "fresh-token");
+    assert.equal(payload.get("remoteip"), "127.0.0.1");
+
+    global.fetch = async () => ({ ok: true, json: async () => ({ success: true, action: "login", hostname: "localhost" }) });
+    await assert.rejects(contactService.verifyTurnstile("wrong-action", "127.0.0.1"), error => error.statusCode === 400);
+    global.fetch = async () => ({ ok: true, json: async () => ({ success: true, action: "contact", hostname: "attacker.example" }) });
+    await assert.rejects(contactService.verifyTurnstile("wrong-host", "127.0.0.1"), error => error.statusCode === 400);
+  } finally {
+    global.fetch = previousFetch;
+    if (previousSecret === undefined) delete process.env.TURNSTILE_SECRET_KEY;
+    else process.env.TURNSTILE_SECRET_KEY = previousSecret;
+    if (previousHostnames === undefined) delete process.env.TURNSTILE_HOSTNAMES;
+    else process.env.TURNSTILE_HOSTNAMES = previousHostnames;
+    if (previousTestMode === undefined) delete process.env.TURNSTILE_TEST_MODE;
+    else process.env.TURNSTILE_TEST_MODE = previousTestMode;
+    if (previousEnvironment === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = previousEnvironment;
+  }
+});
+
+test("Turnstile test mode is limited to development and accepts Cloudflare's test response", async () => {
+  const previousSecret = process.env.TURNSTILE_SECRET_KEY;
+  const previousTestMode = process.env.TURNSTILE_TEST_MODE;
+  const previousEnvironment = process.env.NODE_ENV;
+  const previousFetch = global.fetch;
+  process.env.NODE_ENV = "development";
+  process.env.TURNSTILE_TEST_MODE = "true";
+  delete process.env.TURNSTILE_SECRET_KEY;
+  let submittedSecret;
+  global.fetch = async (_url, options) => {
+    submittedSecret = options.body.get("secret");
+    return { ok: true, json: async () => ({ success: true, action: null, hostname: "example.com" }) };
+  };
+  try {
+    await assert.doesNotReject(contactService.verifyTurnstile("XXXX.DUMMY.TOKEN.XXXX", "127.0.0.1"));
+    assert.equal(submittedSecret, "1x0000000000000000000000000000000AA");
+  } finally {
+    global.fetch = previousFetch;
+    if (previousSecret === undefined) delete process.env.TURNSTILE_SECRET_KEY;
+    else process.env.TURNSTILE_SECRET_KEY = previousSecret;
+    if (previousTestMode === undefined) delete process.env.TURNSTILE_TEST_MODE;
+    else process.env.TURNSTILE_TEST_MODE = previousTestMode;
     if (previousEnvironment === undefined) delete process.env.NODE_ENV;
     else process.env.NODE_ENV = previousEnvironment;
   }
