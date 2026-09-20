@@ -50,6 +50,7 @@ app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
     limit: Number(process.env.RATE_LIMIT_MAX) || 300,
+    skip: (req) => req.method === "POST" && req.originalUrl.split("?")[0] === "/api/newsletter/unsubscribe",
     standardHeaders: "draft-8",
     legacyHeaders: false,
   })
@@ -70,7 +71,9 @@ app.use("/api/chat", require("./routes/chat.routes"));
 app.use("/api/admin/inquiries", require("./routes/admin-contact.routes"));
 app.use("/api/admin/uploads", require("./routes/upload.routes"));
 app.use("/api/testimonials", require("./routes/testimonial.routes"));
-app.use("/api/subscribe", require("./routes/subscribe.routes"));
+app.use("/api/admin/testimonials", require("./routes/admin-testimonial.routes"));
+app.use("/api/newsletter", require("./routes/newsletter.routes"));
+app.use("/api/admin/newsletter", require("./routes/admin-newsletter.routes"));
 
 app.use(notFound);
 app.use(errorHandler);

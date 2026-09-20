@@ -1,10 +1,7 @@
 const router = require("express").Router();
-const ctrl = require("../controllers/testimonial.controller");
+const controller = require("../controllers/testimonial.controller");
+const asyncHandler = require("../utils/asyncHandler");
 
-router.post("/", ctrl.create);
-router.get("/", ctrl.getAll);
-router.get("/:id", ctrl.getOne);
-router.put("/:id", ctrl.update);
-router.delete("/:id", ctrl.remove);
+router.get("/", asyncHandler(controller.publicList));
 
 module.exports = router;

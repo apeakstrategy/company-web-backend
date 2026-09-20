@@ -1,0 +1,3 @@
+ALTER TABLE `ContactInquiry`
+  ADD COLUMN `confirmationStatus` ENUM('PENDING','SENT','FAILED') NOT NULL DEFAULT 'PENDING',
+  ADD COLUMN `confirmationError` VARCHAR(1000) NULL;
