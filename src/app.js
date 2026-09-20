@@ -29,6 +29,19 @@ app.use(
     credentials: true,
   })
 );
+app.use("/api/chat", (req, _res, next) => {
+  if (req.method === "POST" && !req.is("application/json")) {
+    return next(new AppError(415, "Please send a JSON request."));
+  }
+  next();
+});
+app.use("/api/chat", express.json({ limit: "16kb" }));
+app.use("/api/chat", (error, _req, res, _next) => {
+  res.status(error.type === "entity.too.large" ? 413 : error.statusCode || error.status || 400).json({
+    success: false,
+    error: { message: error.type === "entity.too.large" ? "Message is too long." : error.statusCode === 415 ? "Please send a JSON request." : "Please send a valid JSON request." },
+  });
+});
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: false, limit: "1mb" }));
 app.use(cookieParser());
@@ -37,6 +50,7 @@ app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
     limit: Number(process.env.RATE_LIMIT_MAX) || 300,
+    skip: (req) => req.method === "POST" && req.originalUrl.split("?")[0] === "/api/newsletter/unsubscribe",
     standardHeaders: "draft-8",
     legacyHeaders: false,
   })
@@ -53,10 +67,13 @@ app.use("/api/auth/admin", require("./routes/auth.routes"));
 app.use("/api/admin/works", require("./routes/admin-work.routes"));
 app.use("/api/admin/blogs", require("./routes/admin-blog.routes"));
 app.use("/api/contact", require("./routes/contact.routes"));
+app.use("/api/chat", require("./routes/chat.routes"));
 app.use("/api/admin/inquiries", require("./routes/admin-contact.routes"));
 app.use("/api/admin/uploads", require("./routes/upload.routes"));
 app.use("/api/testimonials", require("./routes/testimonial.routes"));
-app.use("/api/subscribe", require("./routes/subscribe.routes"));
+app.use("/api/admin/testimonials", require("./routes/admin-testimonial.routes"));
+app.use("/api/newsletter", require("./routes/newsletter.routes"));
+app.use("/api/admin/newsletter", require("./routes/admin-newsletter.routes"));
 
 app.use(notFound);
 app.use(errorHandler);

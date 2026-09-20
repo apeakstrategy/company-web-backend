@@ -176,6 +176,8 @@ model ContactInquiry {
   userAgent          String?         @db.VarChar(500)
   notificationStatus DeliveryStatus  @default(PENDING)
   notificationError  String?         @db.VarChar(1000)
+  confirmationStatus DeliveryStatus  @default(PENDING)
+  confirmationError  String?         @db.VarChar(1000)
   lastRepliedAt      DateTime?
   archivedAt         DateTime?
   createdAt          DateTime        @default(now())
@@ -233,11 +235,113 @@ model Work {
   images               WorkImage[]
   technologies         WorkTechnology[]
   services             WorkService[]
+  testimonials         Testimonial[]
 
   @@index([status, sortOrder])
   @@index([category, status])
   @@index([isFeatured, status])
   @@index([createdAt])
+}
+
+enum TestimonialStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model Testimonial {
+  id               Int               @id @default(autoincrement())
+  clientName       String            @db.VarChar(120)
+  attribution      String            @db.VarChar(160)
+  quote            String            @db.Text
+  workId           Int?
+  status           TestimonialStatus @default(DRAFT)
+  sortOrder        Int               @default(0)
+  consentConfirmed Boolean           @default(false)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  work             Work?             @relation(fields: [workId], references: [id], onDelete: SetNull)
+
+  @@index([status, sortOrder])
+  @@index([workId])
+}
+
+enum NewsletterSubscriberStatus {
+  PENDING
+  ACTIVE
+  UNSUBSCRIBED
+}
+
+enum NewsletterCampaignStatus {
+  DRAFT
+  QUEUED
+  SENDING
+  COMPLETED
+}
+
+enum NewsletterRecipientMode {
+  ALL
+  SELECTED
+}
+
+enum NewsletterDeliveryStatus {
+  PENDING
+  SENDING
+  SENT
+  FAILED
+  SKIPPED
+}
+
+model NewsletterSubscriber {
+  id                       Int                        @id @default(autoincrement())
+  email                    String                     @unique @db.VarChar(191)
+  status                   NewsletterSubscriberStatus @default(PENDING)
+  consentSource            String                     @db.VarChar(40)
+  consentAt                DateTime?
+  confirmedAt              DateTime?
+  confirmationTokenHash    String?                    @unique @db.VarChar(64)
+  confirmationExpiresAt    DateTime?
+  confirmationSentAt       DateTime?
+  unsubscribedAt           DateTime?
+  createdAt                DateTime                   @default(now())
+  updatedAt                DateTime                   @updatedAt
+  deliveries               NewsletterDelivery[]
+
+  @@index([status, createdAt])
+}
+
+model NewsletterCampaign {
+  id          Int                      @id @default(autoincrement())
+  subject     String                   @db.VarChar(191)
+  body        String                   @db.Text
+  status      NewsletterCampaignStatus @default(DRAFT)
+  mode        NewsletterRecipientMode?
+  queuedAt    DateTime?
+  completedAt DateTime?
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
+  deliveries  NewsletterDelivery[]
+
+  @@index([status, createdAt])
+}
+
+model NewsletterDelivery {
+  id                Int                      @id @default(autoincrement())
+  campaignId        Int
+  subscriberId      Int?
+  email             String                   @db.VarChar(191)
+  status            NewsletterDeliveryStatus @default(PENDING)
+  error             String?                  @db.VarChar(1000)
+  providerMessageId String?                  @db.VarChar(255)
+  claimedAt         DateTime?
+  sentAt            DateTime?
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  campaign          NewsletterCampaign       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  subscriber        NewsletterSubscriber?    @relation(fields: [subscriberId], references: [id], onDelete: SetNull)
+
+  @@unique([campaignId, email])
+  @@index([status, id])
+  @@index([subscriberId])
 }
 
 model WorkSection {

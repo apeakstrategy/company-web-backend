@@ -10,10 +10,7 @@ const hashIp = (ip) => crypto.createHmac("sha256", process.env.CONTACT_IP_HASH_S
 
 async function verifyTurnstile(token, remoteip) {
   const secret = process.env.TURNSTILE_SECRET_KEY;
-  if (!secret) {
-    if (process.env.NODE_ENV === "production") throw new AppError(503, "Contact form verification is not configured");
-    return;
-  }
+  if (!secret) return;
   if (!token) throw new AppError(400, "Please complete the security check");
   let response;
   try {
@@ -23,22 +20,42 @@ async function verifyTurnstile(token, remoteip) {
   if (!result.success) throw new AppError(400, "Security verification failed. Please try again");
 }
 
-exports.submit = async (input, request) => {
+exports.verifyTurnstile = verifyTurnstile;
+
+exports.submit = async (input, request, { db = prisma, mailer = mail, verify = verifyTurnstile } = {}) => {
   const elapsed = Date.now() - new Date(input.formStartedAt).getTime();
   if (elapsed < 3000 || elapsed > 86400000) throw new AppError(400, "Please reload the form and try again");
-  await verifyTurnstile(input.turnstileToken, request.ip);
-  const duplicate = await prisma.contactInquiry.findFirst({ where: { email: input.email, message: input.message, createdAt: { gte: new Date(Date.now() - 600000) } }, select: { reference: true } });
-  if (duplicate) throw new AppError(429, `This message was already received (${duplicate.reference})`);
-  const inquiry = await prisma.contactInquiry.create({ data: { reference: makeReference(), name: input.name, email: input.email, subject: input.subject, message: input.message, source: "website", ipHash: hashIp(request.ip), userAgent: String(request.get("user-agent") || "").slice(0, 500) || null } });
-  try {
-    await mail.sendNotification(inquiry);
-    await prisma.contactInquiry.update({ where: { id: inquiry.id }, data: { notificationStatus: "SENT", notificationError: null } });
-  } catch (error) {
-    console.error("Contact notification failed", inquiry.reference, cleanError(error));
-    await prisma.contactInquiry.update({ where: { id: inquiry.id }, data: { notificationStatus: "FAILED", notificationError: cleanError(error) } });
+  mailer.assertConfigured();
+  await verify(input.turnstileToken, request.ip);
+  const duplicate = await db.contactInquiry.findFirst({ where: { email: input.email, message: input.message, createdAt: { gte: new Date(Date.now() - 600000) } }, orderBy: { createdAt: "desc" } });
+  if (duplicate?.notificationStatus === "PENDING" && Date.now() - new Date(duplicate.createdAt).getTime() < 120000) {
+    throw new AppError(409, "Your message is still being processed. Please wait a moment before trying again.");
   }
-  if (process.env.SEND_CONTACT_CONFIRMATION !== "false") mail.sendConfirmation(inquiry).catch((error) => console.error("Contact confirmation failed", inquiry.reference, cleanError(error)));
-  return { reference: inquiry.reference };
+  const inquiry = duplicate || await db.contactInquiry.create({ data: { reference: makeReference(), name: input.name, email: input.email, subject: input.subject, message: input.message, source: "website", ipHash: hashIp(request.ip), userAgent: String(request.get("user-agent") || "").slice(0, 500) || null } });
+
+  if (inquiry.notificationStatus !== "SENT") {
+    try {
+      await mailer.sendNotification(inquiry);
+    } catch (error) {
+      console.error("Contact notification failed", inquiry.reference, cleanError(error));
+      await db.contactInquiry.update({ where: { id: inquiry.id }, data: { notificationStatus: "FAILED", notificationError: cleanError(error) } });
+      throw new AppError(502, "Your message was saved, but email delivery failed. Please try sending it again.");
+    }
+    await db.contactInquiry.update({ where: { id: inquiry.id }, data: { notificationStatus: "SENT", notificationError: null } });
+  }
+
+  let confirmationSent = inquiry.confirmationStatus === "SENT";
+  if (process.env.SEND_CONTACT_CONFIRMATION !== "false" && !confirmationSent) {
+    try {
+      await mailer.sendConfirmation(inquiry);
+      await db.contactInquiry.update({ where: { id: inquiry.id }, data: { confirmationStatus: "SENT", confirmationError: null } });
+      confirmationSent = true;
+    } catch (error) {
+      console.error("Contact confirmation failed", inquiry.reference, cleanError(error));
+      await db.contactInquiry.update({ where: { id: inquiry.id }, data: { confirmationStatus: "FAILED", confirmationError: cleanError(error) } });
+    }
+  }
+  return { reference: inquiry.reference, confirmationSent };
 };
 
 exports.list = async ({ page, limit, search, status, priority, notificationStatus, sortOrder }) => {

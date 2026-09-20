@@ -9,6 +9,7 @@ const notFound = (req, _res, next) => {
 const errorHandler = (err, _req, res, _next) => {
   let statusCode = err.statusCode || 500;
   let message = err.message || "Internal server error";
+  const isChatRequest = _req.path === "/api/chat" || _req.path.startsWith("/api/chat/");
 
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
     if (err.code === "P2002") {
@@ -26,6 +27,7 @@ const errorHandler = (err, _req, res, _next) => {
 
   if (statusCode >= 500) {
     console.error(err);
+    if (isChatRequest) message = "Sorry, I'm having trouble responding right now. You can still contact our team directly.";
   }
 
   const response = {
@@ -34,7 +36,7 @@ const errorHandler = (err, _req, res, _next) => {
   };
 
   if (err.details) response.error.details = err.details;
-  if (process.env.NODE_ENV === "development" && statusCode >= 500) {
+  if (process.env.NODE_ENV === "development" && statusCode >= 500 && !isChatRequest) {
     response.error.stack = err.stack;
   }
 
