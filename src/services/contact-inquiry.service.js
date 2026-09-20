@@ -9,15 +9,21 @@ const makeReference = () => `APS-${new Date().toISOString().slice(0, 7).replace(
 const hashIp = (ip) => crypto.createHmac("sha256", process.env.CONTACT_IP_HASH_SECRET || process.env.JWT_SECRET || "development-only").update(ip || "unknown").digest("hex");
 
 async function verifyTurnstile(token, remoteip) {
-  const secret = process.env.TURNSTILE_SECRET_KEY;
+  const testMode = process.env.NODE_ENV !== "production" && process.env.TURNSTILE_TEST_MODE === "true";
+  const secret = testMode ? "1x0000000000000000000000000000000AA" : process.env.TURNSTILE_SECRET_KEY;
   if (!secret) return;
-  if (!token) throw new AppError(400, "Please complete the security check");
+  const expectedHostnames = new Set((process.env.TURNSTILE_HOSTNAMES || "").split(",").map((hostname) => hostname.trim().toLowerCase()).filter(Boolean));
+  if (!token || token.length > 2048) throw new AppError(400, "Please complete the security check");
+  if (!testMode && !expectedHostnames.size) throw new AppError(503, "Contact form verification hostnames are not configured");
   let response;
   try {
     response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ secret, response: token, remoteip: remoteip || "" }), signal: AbortSignal.timeout(8000) });
   } catch (_error) { throw new AppError(503, "Security verification is temporarily unavailable"); }
+  if (!response.ok) throw new AppError(503, "Security verification is temporarily unavailable");
   const result = await response.json();
-  if (!result.success) throw new AppError(400, "Security verification failed. Please try again");
+  if (!result.success || (!testMode && (result.action !== "contact" || !expectedHostnames.has(String(result.hostname || "").toLowerCase())))) {
+    throw new AppError(400, "Security verification failed. Please try again");
+  }
 }
 
 exports.verifyTurnstile = verifyTurnstile;
