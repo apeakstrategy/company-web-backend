@@ -2,7 +2,7 @@ const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, (char) => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;",
 }[char]));
 
-const layout = (title, body) => `<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;background:#2D1810;font-family:Arial,sans-serif;color:#fff"><div style="max-width:640px;margin:auto;padding:32px 18px"><div style="border:1px solid rgba(255,255,255,.15);border-radius:20px;background:#3A2117;padding:28px"><div style="color:#E67E22;font-size:12px;letter-spacing:2px;text-transform:uppercase">A Peak Strategy</div><h1 style="font-size:28px;margin:12px 0 22px">${escapeHtml(title)}</h1>${body}</div><p style="color:#a99588;font-size:12px;text-align:center;margin-top:18px">A Peak Strategy | Strategic creativity, thoughtfully delivered.</p></div></body></html>`;
+const layout = (title, body) => `<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;background:#2D1810;font-family:Arial,sans-serif;color:#fff"><div style="max-width:640px;margin:auto;padding:32px 18px"><div style="border:1px solid rgba(255,255,255,.15);border-radius:20px;background:#3A2117;padding:28px"><div style="color:#E67E22;font-size:12px;letter-spacing:2px;text-transform:uppercase">APeakStrategy</div><h1 style="font-size:28px;margin:12px 0 22px">${escapeHtml(title)}</h1>${body}</div><p style="color:#a99588;font-size:12px;text-align:center;margin-top:18px">APeakStrategy | Strategic creativity, thoughtfully delivered.</p></div></body></html>`;
 
 exports.notification = (inquiry, adminUrl) => ({
   subject: `New inquiry ${inquiry.reference}: ${inquiry.subject}`,
@@ -12,7 +12,7 @@ exports.notification = (inquiry, adminUrl) => ({
 
 exports.confirmation = (inquiry) => ({
   subject: `We received your message - ${inquiry.reference}`,
-  text: `Hi ${inquiry.name},\n\nThank you for contacting A Peak Strategy. We received your inquiry (${inquiry.reference}) and will respond as soon as possible.\n\nSubject: ${inquiry.subject}\n\nYou can reply to this email if you have more details to share.`,
+  text: `Hi ${inquiry.name},\n\nThank you for contacting APeakStrategy. We received your inquiry (${inquiry.reference}) and will respond as soon as possible.\n\nSubject: ${inquiry.subject}\n\nYou can reply to this email if you have more details to share.`,
   html: layout("Thank you for reaching out", `<p style="color:#d5c8c0;line-height:1.7">Hi ${escapeHtml(inquiry.name)},</p><p style="color:#d5c8c0;line-height:1.7">We received your inquiry and our team will respond as soon as possible.</p><p style="color:#E67E22"><strong>Reference: ${escapeHtml(inquiry.reference)}</strong></p><p style="color:#d5c8c0">Subject: ${escapeHtml(inquiry.subject)}</p><p style="color:#d5c8c0">You can reply to this email if you have more details to share.</p>`),
 });
 

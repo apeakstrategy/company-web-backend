@@ -34,7 +34,7 @@ model Blog {
   coverImageUrl        String              @db.VarChar(2048)
   coverImagePublicId   String?             @db.VarChar(255)
   coverImageAltText    String?             @db.VarChar(255)
-  authorName           String              @default("A Peak Strategy Team") @db.VarChar(120)
+  authorName           String              @default("APeakStrategy Team") @db.VarChar(120)
   authorRole           String?             @db.VarChar(120)
   authorImageUrl       String?             @db.VarChar(2048)
   authorImagePublicId  String?             @db.VarChar(255)
