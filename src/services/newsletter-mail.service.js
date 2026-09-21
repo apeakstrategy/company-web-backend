@@ -5,7 +5,7 @@ const AppError = require("../utils/AppError");
 const siteUrl = () => process.env.PUBLIC_SITE_URL || "http://localhost:3000";
 const apiUrl = () => process.env.PUBLIC_API_URL || "http://localhost:5000/api";
 const from = () => ({
-  name: process.env.MAIL_FROM_NAME || "A Peak Strategy",
+  name: process.env.MAIL_FROM_NAME || "APeakStrategy",
   address: process.env.MAIL_FROM_ADDRESS || process.env.SMTP_USER || process.env.MAIL_USER,
 });
 
@@ -29,7 +29,7 @@ exports.assertConfigured = () => {
   }
 };
 
-const page = (heading, body) => `<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;background:#2d1810;color:#fff;font-family:Arial,sans-serif"><div style="max-width:620px;margin:0 auto;padding:30px 16px"><div style="border:1px solid #76543f;border-radius:18px;background:#3a2117;padding:28px"><p style="color:#f39a3d;font-size:12px;letter-spacing:2px;text-transform:uppercase">A Peak Strategy</p><h1 style="font-size:27px;line-height:1.2">${escapeHtml(heading)}</h1>${body}</div><p style="color:#bba99d;font-size:12px;text-align:center">A Peak Strategy · 232/10A, Himbutana Lane, Mulleriyawa</p></div></body></html>`;
+const page = (heading, body) => `<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;background:#2d1810;color:#fff;font-family:Arial,sans-serif"><div style="max-width:620px;margin:0 auto;padding:30px 16px"><div style="border:1px solid #76543f;border-radius:18px;background:#3a2117;padding:28px"><p style="color:#f39a3d;font-size:12px;letter-spacing:2px;text-transform:uppercase">APeakStrategy</p><h1 style="font-size:27px;line-height:1.2">${escapeHtml(heading)}</h1>${body}</div><p style="color:#bba99d;font-size:12px;text-align:center">APeakStrategy · 232/10A, Himbutana Lane, Mulleriyawa</p></div></body></html>`;
 
 function linkify(message) {
   let html = "";
@@ -62,8 +62,8 @@ exports.sendConfirmation = async (email, token) => {
   const link = `${siteUrl().replace(/\/$/, "")}/newsletter/confirm?token=${encodeURIComponent(token)}`;
   return accepted(email, {
     from: from(), to: email,
-    subject: "Confirm your A Peak Strategy updates",
-    text: `Please confirm that you want occasional updates from A Peak Strategy:\n${link}\n\nIf you did not request this, ignore this email. The link expires in 48 hours.`,
+    subject: "Confirm your APeakStrategy updates",
+    text: `Please confirm that you want occasional updates from APeakStrategy:\n${link}\n\nIf you did not request this, ignore this email. The link expires in 48 hours.`,
     html: page("Confirm your subscription", `<p style="line-height:1.7;color:#e0d4ca">Please confirm that you want occasional news and promotions from us.</p><p style="margin:28px 0"><a href="${escapeHtml(link)}" style="background:#e67e22;color:#fff;text-decoration:none;border-radius:999px;padding:13px 22px">Confirm my email</a></p><p style="color:#bba99d;font-size:13px">If you did not request this, ignore this email. This link expires in 48 hours.</p>`),
   });
 };
@@ -76,7 +76,7 @@ exports.sendCampaign = async (email, subject, body, unsubscribeToken) => {
     from: from(), to: email,
     replyTo: process.env.MAIL_REPLY_ADDRESS || from().address,
     subject,
-    text: `${body}\n\nA Peak Strategy\n232/10A, Himbutana Lane, Mulleriyawa\nUnsubscribe: ${unsubscribeUrl}`,
+    text: `${body}\n\nAPeakStrategy\n232/10A, Himbutana Lane, Mulleriyawa\nUnsubscribe: ${unsubscribeUrl}`,
     html: page(subject, `<div style="line-height:1.7;white-space:pre-wrap;color:#e0d4ca">${linkify(body)}</div><hr style="border:0;border-top:1px solid #76543f;margin:28px 0"><p style="color:#bba99d;font-size:12px">You received this because you confirmed your subscription. <a href="${escapeHtml(unsubscribeUrl)}" style="color:#f39a3d">Unsubscribe</a>.</p>`),
     headers: {
       "List-Unsubscribe": `<${oneClickUrl}>`,

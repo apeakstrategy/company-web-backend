@@ -14,7 +14,7 @@ const posts = [
 async function main() {
   for (const [sortOrder, [title,excerpt,category,coverImageUrl,date]] of posts.entries()) {
     const slug = slugify(title);
-    const blog = await prisma.blog.upsert({ where:{slug}, update:{title,excerpt,category,coverImageUrl,sortOrder}, create:{slug,title,excerpt,category,coverImageUrl,coverImageAltText:title,authorName:"A Peak Strategy Team",authorRole:"Strategic Experts",readTimeMinutes:5,isFeatured:sortOrder===0,status:"PUBLISHED",publishedAt:new Date(`${date}T00:00:00Z`),sortOrder,seoTitle:title.slice(0,70),seoDescription:excerpt.slice(0,170)} });
+    const blog = await prisma.blog.upsert({ where:{slug}, update:{title,excerpt,category,coverImageUrl,sortOrder}, create:{slug,title,excerpt,category,coverImageUrl,coverImageAltText:title,authorName:"APeakStrategy Team",authorRole:"Strategic Experts",readTimeMinutes:5,isFeatured:sortOrder===0,status:"PUBLISHED",publishedAt:new Date(`${date}T00:00:00Z`),sortOrder,seoTitle:title.slice(0,70),seoDescription:excerpt.slice(0,170)} });
     if (await prisma.blogSection.count({where:{blogId:blog.id}}) === 0) {
       await prisma.blogSection.create({ data:{blogId:blog.id,heading:"Overview",sortOrder:0,paragraphs:{create:[{content:excerpt,sortOrder:0},{content:"Our perspective combines practical experience, thoughtful strategy, and a clear focus on sustainable results.",sortOrder:1}] } } });
     }

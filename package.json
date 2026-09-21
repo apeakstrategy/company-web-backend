@@ -1,7 +1,7 @@
 {
   "name": "peakstrategybackend",
   "version": "1.0.0",
-  "description": "API for the A Peak Strategy company website",
+  "description": "API for the APeakStrategy company website",
   "main": "src/server.js",
   "scripts": {
     "dev": "nodemon src/server.js",

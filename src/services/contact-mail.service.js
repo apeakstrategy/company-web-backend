@@ -3,7 +3,7 @@ const templates = require("../utils/emailTemplates");
 const AppError = require("../utils/AppError");
 
 const from = () => ({
-  name: process.env.MAIL_FROM_NAME || "A Peak Strategy",
+  name: process.env.MAIL_FROM_NAME || "APeakStrategy",
   address: process.env.MAIL_FROM_ADDRESS || process.env.SMTP_USER || process.env.MAIL_USER,
 });
 const replyAddress = () => process.env.MAIL_REPLY_ADDRESS || from().address;
